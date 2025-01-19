@@ -2,6 +2,7 @@ import './bootstrap';
 import { createApp } from 'vue'
 import MainLayout from './layouts/MainLayout.vue'
 import axios from 'axios'
+import { clickOutside } from './directives/clickOutside'
 
 // Настройка axios
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
@@ -12,3 +13,5 @@ if (token) {
 
 const app = createApp(MainLayout)
 app.mount("#app")
+
+app.directive('click-outside', clickOutside)

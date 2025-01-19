@@ -52,8 +52,9 @@ class TaskController extends Controller
         return response()->noContent();
     }
 
-    public function updateStatus(Task $task, Request $request)
+    public function updateStatus($id, Request $request)
     {
+        $task = Task::findOrFail($id);
         $request->validate([
             'status' => 'required|in:todo,in_progress,done'
         ]);

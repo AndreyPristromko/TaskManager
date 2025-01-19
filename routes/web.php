@@ -12,5 +12,4 @@ Route::post('/tasks', [TaskController::class, 'store']);
 Route::get('/tasks/{id}', [TaskController::class, 'show']);
 Route::patch('/tasks/{id}', [TaskController::class, 'update']);
 Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
-
-Route::patch('/tasks/{task}/status', [TaskController::class, 'updateStatus']);
+Route::patch('/tasks/{id}/status', [TaskController::class, 'updateStatus']);

@@ -10,21 +10,84 @@
             </div>
             
             <div v-else class="task-item" v-for="task in tasks" :key="task.id">
-                <div class="task-content">
-                    <h3 class="task-title">{{ task.title }}</h3>
+                <!-- Режим просмотра -->
+                <div v-if="!task.isEditing" class="task-content">
+                    <div class="task-header">
+                        <h3 class="task-title">{{ task.title }}</h3>
+                        <button @click="startEdit(task)" class="edit-btn">✎</button>
+                    </div>
                     <p class="task-description">{{ task.description }}</p>
                 </div>
+
+                <!-- Режим редактирования -->
+                <div v-else class="task-content">
+                    <div class="edit-form">
+                        <input 
+                            type="text" 
+                            v-model="task.editTitle" 
+                            class="edit-input"
+                            placeholder="Название задачи"
+                        >
+                        <textarea 
+                            v-model="task.editDescription" 
+                            class="edit-input"
+                            placeholder="Описание задачи"
+                        ></textarea>
+                        <input 
+                            type="date" 
+                            v-model="task.editDeadline"
+                            class="edit-input date-input"
+                        >
+                        <div class="edit-buttons">
+                            <button @click="saveEdit(task)" class="save-btn">Сохранить</button>
+                            <button @click="cancelEdit(task)" class="cancel-btn">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="task-footer">
-                    <select 
-                        v-model="task.status"
-                        class="status-select"
-                        @change="updateTaskStatus(task.id, task.status)"
-                    >
-                        <option value="todo">К выполнению</option>
-                        <option value="in_progress">В процессе</option>
-                        <option value="done">Выполнено</option>
-                    </select>
-                    <span class="task-date">{{ task.deadline }}</span>
+                    <div class="custom-select" v-click-outside="closeSelect">
+                        <div 
+                            class="select-trigger" 
+                            @click="toggleSelect(task)"
+                            :class="{ 'active': task.isSelectOpen }"
+                        >
+                            <span>{{ getStatusText(task.status) }}</span>
+                            <span class="select-arrow" :class="{ 'open': task.isSelectOpen }">▼</span>
+                        </div>
+                        <transition name="dropdown">
+                            <div class="select-options" v-if="task.isSelectOpen">
+                                <div 
+                                    class="select-option" 
+                                    :class="{ 'selected': task.status === 'todo' }"
+                                    @click="selectOption(task, 'todo')"
+                                    @mouseenter="hoveredOption = 'todo'"
+                                    @mouseleave="hoveredOption = null"
+                                >
+                                    К выполнению
+                                </div>
+                                <div 
+                                    class="select-option"
+                                    :class="{ 'selected': task.status === 'in_progress' }"
+                                    @click="selectOption(task, 'in_progress')"
+                                    @mouseenter="hoveredOption = 'in_progress'"
+                                    @mouseleave="hoveredOption = null"
+                                >
+                                    В процессе
+                                </div>
+                                <div 
+                                    class="select-option"
+                                    :class="{ 'selected': task.status === 'done' }"
+                                    @click="selectOption(task, 'done')"
+                                    @mouseenter="hoveredOption = 'done'"
+                                    @mouseleave="hoveredOption = null"
+                                >
+                                    Выполнено
+                                </div>
+                            </div>
+                        </transition>
+                    </div>
+                    <span class="task-date">{{ formatDate(task.deadline) }}</span>
                 </div>
             </div>
         </div>
@@ -33,32 +96,112 @@
 
 <script>
 import axios from 'axios'
+import { clickOutside } from '../directives/clickOutside'
 
 export default {
     name: 'TasksList',
+    directives: {
+        clickOutside
+    },
     data() {
         return {
             tasks: [],
-            loading: true
+            loading: true,
+            hoveredOption: null
         }
     },
     methods: {
         async fetchTasks() {
             try {
                 const response = await axios.get('/tasks')
-                this.tasks = response.data
+                this.tasks = response.data.map(task => ({
+                    ...task,
+                    isEditing: false,
+                    editTitle: task.title,
+                    editDescription: task.description,
+                    editDeadline: task.deadline
+                }))
                 this.loading = false
             } catch (error) {
                 console.error('Error fetching tasks:', error)
                 this.loading = false
             }
         },
-        async updateTaskStatus(taskId, status) {
+        startEdit(task) {
+            task.isEditing = true;
+            task.editTitle = task.title;
+            task.editDescription = task.description;
+            task.editDeadline = task.deadline;
+        },
+        async saveEdit(task) {
             try {
-                await axios.patch(`/tasks/${taskId}`, { status })
+                await axios.patch(`/tasks/${task.id}`, {
+                    title: task.editTitle,
+                    description: task.editDescription,
+                    deadline: task.editDeadline
+                });
+
+                task.title = task.editTitle;
+                task.description = task.editDescription;
+                task.deadline = task.editDeadline;
+                task.isEditing = false;
             } catch (error) {
-                console.error('Error updating task status:', error)
+                console.error('Error updating task:', error);
             }
+        },
+        cancelEdit(task) {
+            task.isEditing = false;
+            task.editTitle = task.title;
+            task.editDescription = task.description;
+            task.editDeadline = task.deadline;
+        },
+        toggleSelect(task) {
+            this.tasks.forEach(t => {
+                if (t.id !== task.id) {
+                    t.isSelectOpen = false;
+                }
+            });
+            task.isSelectOpen = !task.isSelectOpen;
+        },
+        async selectOption(task, status) {
+            // Сохраняем старый статус на случай ошибки
+            const oldStatus = task.status;
+            
+            // Сразу обновляем UI
+            task.status = status;
+            task.isSelectOpen = false;
+            
+            try {
+                await axios.patch(`/tasks/${task.id}/status`, { 
+                    status: status 
+                });
+            } catch (error) {
+                // В случае ошибки возвращаем старый статус
+                console.error('Error updating task:', error);
+                task.status = oldStatus;
+            }
+        },
+        closeSelect() {
+            this.tasks.forEach(task => {
+                task.isSelectOpen = false;
+            });
+        },
+        getStatusText(status) {
+            switch (status) {
+                case 'todo':
+                    return 'К выполнению';
+                case 'in_progress':
+                    return 'В процессе';
+                case 'done':
+                    return 'Выполнено';
+                default:
+                    return 'Неизвестный статус';
+            }
+        },
+        formatDate(date) {
+            if (!date) return '';
+            const [year, month, day] = date.split('-');
+            return `${day}.${month}.${year}`;
         }
     },
     mounted() {
@@ -127,19 +270,82 @@ export default {
     border-top: 1px solid #383950;
 }
 
-.status-select {
+.custom-select {
+    position: relative;
+    min-width: 140px;
+}
+
+.select-trigger {
     background: #383950;
-    border: none;
+    border: 1px solid #4a4b61;
     color: #fff;
     padding: 8px 12px;
     border-radius: 4px;
     font-size: 14px;
     cursor: pointer;
-    outline: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
 }
 
-.status-select:hover {
+.select-trigger:hover {
+    border-color: #9dff00;
+    background-color: #424360;
+}
+
+.select-arrow {
+    color: #9dff00;
+    font-size: 12px;
+    margin-left: 8px;
+    transition: transform 0.2s ease;
+}
+
+.select-arrow.open {
+    transform: rotate(180deg);
+}
+
+.select-options {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #2f3042;
+    border: 1px solid #4a4b61;
+    border-radius: 4px;
+    overflow: hidden;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.select-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #fff;
+    font-size: 14px;
+}
+
+.select-option:hover {
     background: #424360;
+    color: #9dff00;
+}
+
+.select-option.selected {
+    background: #424360;
+    color: #9dff00;
+}
+
+/* Анимации для выпадающего списка */
+.dropdown-enter-active,
+.dropdown-leave-active {
+    transition: all 0.2s ease;
+}
+
+.dropdown-enter-from,
+.dropdown-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
 }
 
 .task-date {
@@ -152,5 +358,114 @@ export default {
     padding: 40px;
     color: #9898a3;
     font-size: 16px;
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.edit-btn {
+    background: none;
+    border: none;
+    color: #9898a3;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 8px;
+    transition: color 0.2s;
+}
+
+.edit-btn:hover {
+    color: #fff;
+}
+
+.edit-input {
+    width: 100%;
+    background: #383950;
+    border: 1px solid #4a4b61;
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.edit-textarea {
+    width: 100%;
+    background: #383950;
+    border: 1px solid #4a4b61;
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 14px;
+    min-height: 80px;
+    resize: vertical;
+    margin-bottom: 12px;
+}
+
+.edit-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.save-btn, .cancel-btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.save-btn {
+    background: #9dff00;
+    color: #000;
+}
+
+.save-btn:hover {
+    background: #8ee600;
+}
+
+.cancel-btn {
+    background: #4a4b61;
+    color: #fff;
+}
+
+.cancel-btn:hover {
+    background: #5a5b71;
+}
+
+.edit-input:focus, .edit-textarea:focus {
+    outline: none;
+    border-color: #9dff00;
+}
+
+.date-input {
+    background: #383950;
+    border: 1px solid #4a4b61;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.date-input:hover {
+    border-color: #9dff00;
+}
+
+.date-input:focus {
+    border-color: #9dff00;
+    outline: none;
+    box-shadow: 0 0 0 1px #9dff00;
+}
+
+/* Стилизация календаря (работает не во всех браузерах) */
+.date-input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
 }
 </style>
