@@ -5,11 +5,13 @@ import axios from 'axios'
 import { clickOutside } from './directives/clickOutside'
 import './assets/styles/common.css'
 
-// Настройка axios
-axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
+
 const token = document.head.querySelector('meta[name="csrf-token"]')
+
 if (token) {
     axios.defaults.headers.common['X-CSRF-TOKEN'] = token.content
+} else {
+    console.error('CSRF token not found')
 }
 
 const app = createApp(MainLayout)

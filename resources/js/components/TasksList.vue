@@ -239,6 +239,7 @@ export default {
     color: #9898a3;
     line-height: 1.4;
     margin: 0;
+    word-wrap: break-word;
 }
 
 .task-footer {
@@ -357,7 +358,6 @@ export default {
     box-shadow: 0 0 0 1px #9dff00;
 }
 
-/* Стилизация календаря (работает не во всех браузерах) */
 .date-input::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
@@ -369,9 +369,79 @@ export default {
     align-items: center;
 }
 
-@media (max-width: 840px) {
+
+@media (max-width: 1200px) {
+    .task-item {
+        width: 700px;
+        margin-left: -100px;
+    }
+    
+    .task-description {
+        max-width: 600px;
+    }
+}
+
+@media (max-width: 1000px) {
     .tasks-container {
-        padding: 20px 16px;
+        width: 100%;
+        padding: 20px;
+    }
+    
+    .task-item {
+        width: 600px;
+        margin-left: -50px;
+    }
+    
+    .task-description {
+        max-width: 500px;
+    }
+}
+
+@media (max-width: 768px) {
+    .task-item {
+        width: 90%;
+        margin-left: 0;
+        padding: 12px 16px;
+    }
+    
+    .task-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .task-actions {
+        align-self: flex-end;
+    }
+    
+    .task-description {
+        max-width: 100%;
+    }
+    
+    .task-footer {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .task-item {
+        width: 95%;
+        padding: 10px 14px;
+    }
+    
+    .task-title {
+        font-size: 14px;
+    }
+    
+    .task-description {
+        font-size: 12px;
+        line-height: 1.3;
+    }
+    
+    .task-date {
+        font-size: 12px;
     }
 }
 </style>

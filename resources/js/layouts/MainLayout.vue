@@ -13,8 +13,7 @@
                 </div>
             </nav>
         </aside>
-
-        <!-- Основной контент -->
+        
         <main class="main-content">
             <tasks-list />
         </main>
