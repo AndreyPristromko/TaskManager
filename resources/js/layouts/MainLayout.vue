@@ -100,8 +100,12 @@ export default {
 
 .main-content {
     flex: 1;
-    padding: 30px;
-    overflow-y: auto;
+    margin-left: 300px;
+    min-height: 100vh;
+    background: #262837;
+    display: flex;
+    width: calc(100% - 300px);
+    padding-left: calc((100vw - 1400px) / 2);
 }
 
 @media (max-width: 768px) {

@@ -96,6 +96,7 @@ export default {
     padding: 20px;
     margin-top: 20px;
     border: 1px solid #383950;
+    width: 800px;
 }
 
 .edit-input {

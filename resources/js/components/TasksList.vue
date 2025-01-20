@@ -15,7 +15,13 @@
                 <div v-if="!task.isEditing" class="task-content">
                     <div class="task-header">
                         <h3 class="task-title">{{ task.title }}</h3>
-                        <button @click="startEdit(task)" class="edit-btn">✎</button>
+                        <div class="task-actions">
+                            <button @click="startEdit(task)" class="edit-btn">✎</button>
+                            <DeleteTask 
+                                :task="task" 
+                                @task-deleted="onTaskDeleted"
+                            />
+                        </div>
                     </div>
                     <p class="task-description">{{ task.description }}</p>
                 </div>
@@ -49,13 +55,15 @@ import { clickOutside } from '../directives/clickOutside'
 import StatusSelect from './StatusSelect.vue'
 import CreateTask from './CreateTask.vue'
 import TaskEdit from './TaskEdit.vue'
+import DeleteTask from './DeleteTask.vue'
 
 export default {
     name: 'TasksList',
     components: {
         StatusSelect,
         CreateTask,
-        TaskEdit
+        TaskEdit,
+        DeleteTask
     },
     directives: {
         clickOutside
@@ -150,6 +158,9 @@ export default {
         },
         onTaskCreated(newTask) {
             this.tasks.push(newTask)
+        },
+        onTaskDeleted(taskId) {
+            this.tasks = this.tasks.filter(task => task.id !== taskId)
         }
     },
     mounted() {
@@ -160,14 +171,15 @@ export default {
 
 <style scoped>
 .tasks-container {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 1000px;
+    width: 1000px;
     padding: 20px;
     margin-top: -24px;
 }
 
 .tasks-header {
-    margin-bottom: 20px;
+    margin-top: 30px;
+    margin-bottom: 30px;
 }
 
 .tasks-header h1 {
@@ -179,7 +191,6 @@ export default {
 }
 
 .create-task-button {
-    margin-top: 30px;
     margin-bottom: 30px;
 }
 
@@ -187,6 +198,8 @@ export default {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    align-items: center;
+    width: 100%;
 }
 
 .task-item {
@@ -195,6 +208,8 @@ export default {
     padding: 16px 20px;
     border: 1px solid #383950;
     transition: box-shadow 0.2s ease;
+    width: 800px;
+    margin-left: -160px;
 }
 
 .task-item:hover {
@@ -346,5 +361,17 @@ export default {
 .date-input::-webkit-calendar-picker-indicator {
     filter: invert(1);
     cursor: pointer;
+}
+
+.task-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+@media (max-width: 840px) {
+    .tasks-container {
+        padding: 20px 16px;
+    }
 }
 </style>
