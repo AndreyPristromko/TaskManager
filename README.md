@@ -1,5 +1,4 @@
 # TaskFlow - Менеджер задач
-
 TaskFlow - это веб-приложение для управления задачами, построенное на Laravel и Vue.js.
 
 ## Функциональность
@@ -24,31 +23,35 @@ TaskFlow - это веб-приложение для управления зад
 - Node.js >= 16
 - Composer
 - MySQL
-
 ## Установка
 
 1. Клонируйте репозиторий:
-
 ```bash
-git clone https://github.com/yourusername/taskflow.git
+git clone https://github.com/your-username/taskflow.git
 cd taskflow
 ```
 
 2. Установите зависимости:
-
 ```bash
 composer install
 npm install
 ```
-3. Настройки окружения
 
+3. Настройте окружение:
 ```bash
 cp .env.example .env
+php artisan key:generate
 ```
 
-4. Создайте базу данных и настройте подключение в файле `.env`:
-
+4. Создайте базу данных MySQL:
 ```bash
+mysql -u root -p
+CREATE DATABASE taskflow;
+exit;
+```
+
+5. Настройте базу данных в .env файле:
+```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
@@ -57,22 +60,31 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-5. Запустите миграции:
+6. Проверьте подключение к базе данных:
+```bash
+php artisan migrate:status
+```
 
+7. Выполните миграции:
 ```bash
 php artisan migrate
 ```
 
-6. Запустите сервер разработки:
+8. Соберите фронтенд:
+```bash
+npm run build
+```
 
+9. Запустите сервер (в первом терминале):
 ```bash
 php artisan serve
 ```
 
-7. Запустите Vue.js:
-
+10. Запустите сборку фронтенда в режиме разработки (в другом терминале):
 ```bash
 npm run dev
 ```
 
-8. Откройте браузер и перейдите по адресу `http://localhost:8000`
+11. Откройте http://localhost:8000 в браузере
+
+
