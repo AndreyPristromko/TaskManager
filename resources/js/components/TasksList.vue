@@ -46,46 +46,26 @@
                 </div>
 
                 <div class="task-footer">
-                    <div class="custom-select" v-click-outside="closeSelect">
+                    <div class="custom-select" v-click-outside="() => closeSelect(task)">
                         <div 
                             class="select-trigger" 
-                            @click="toggleSelect(task)"
+                            @click.stop="toggleSelect(task)"
                             :class="{ 'active': task.isSelectOpen }"
                         >
                             <span>{{ getStatusText(task.status) }}</span>
                             <span class="select-arrow" :class="{ 'open': task.isSelectOpen }">▼</span>
                         </div>
-                        <transition name="dropdown">
-                            <div class="select-options" v-if="task.isSelectOpen">
-                                <div 
-                                    class="select-option" 
-                                    :class="{ 'selected': task.status === 'todo' }"
-                                    @click="selectOption(task, 'todo')"
-                                    @mouseenter="hoveredOption = 'todo'"
-                                    @mouseleave="hoveredOption = null"
-                                >
-                                    К выполнению
-                                </div>
-                                <div 
-                                    class="select-option"
-                                    :class="{ 'selected': task.status === 'in_progress' }"
-                                    @click="selectOption(task, 'in_progress')"
-                                    @mouseenter="hoveredOption = 'in_progress'"
-                                    @mouseleave="hoveredOption = null"
-                                >
-                                    В процессе
-                                </div>
-                                <div 
-                                    class="select-option"
-                                    :class="{ 'selected': task.status === 'done' }"
-                                    @click="selectOption(task, 'done')"
-                                    @mouseenter="hoveredOption = 'done'"
-                                    @mouseleave="hoveredOption = null"
-                                >
-                                    Выполнено
-                                </div>
+                        <div class="select-options" v-if="task.isSelectOpen" @click.stop>
+                            <div 
+                                v-for="option in statusOptions" 
+                                :key="option.value"
+                                class="select-option"
+                                @click="selectOption(task, option.value)"
+                                :class="{ 'selected': task.status === option.value }"
+                            >
+                                {{ option.text }}
                             </div>
-                        </transition>
+                        </div>
                     </div>
                     <span class="task-date">{{ formatDate(task.deadline) }}</span>
                 </div>
@@ -107,7 +87,12 @@ export default {
         return {
             tasks: [],
             loading: true,
-            hoveredOption: null
+            hoveredOption: null,
+            statusOptions: [
+                { value: 'todo', text: 'К выполнению' },
+                { value: 'in_progress', text: 'В процессе' },
+                { value: 'done', text: 'Выполнено' }
+            ]
         }
     },
     methods: {
@@ -181,10 +166,10 @@ export default {
                 task.status = oldStatus;
             }
         },
-        closeSelect() {
-            this.tasks.forEach(task => {
+        closeSelect(task) {
+            if (task) {
                 task.isSelectOpen = false;
-            });
+            }
         },
         getStatusText(status) {
             switch (status) {
