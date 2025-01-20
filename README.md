@@ -27,7 +27,7 @@ TaskFlow - это веб-приложение для управления зад
 
 1. Клонируйте репозиторий:
 ```bash
-git clone https://github.com/your-username/taskflow.git
+git clone https://github.com/AndreyPristromko/TaskManager.git
 cd taskflow
 ```
 
