@@ -3,6 +3,7 @@ import { createApp } from 'vue'
 import MainLayout from './layouts/MainLayout.vue'
 import axios from 'axios'
 import { clickOutside } from './directives/clickOutside'
+import './assets/styles/common.css'
 
 // Настройка axios
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'

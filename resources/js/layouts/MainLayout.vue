@@ -7,7 +7,7 @@
             <nav class="main-nav">
                 <div class="nav-section">
                     <a href="#" class="nav-item active">
-                        <span class="nav-icon" style="color: #9dff00">✓</span>
+                        <span class="nav-icon" style="color: #9dff00; margin-right: 4px;">✓</span>
                         Задачи
                     </a>
                 </div>
@@ -48,6 +48,8 @@ export default {
     display: flex;
     flex-direction: column;
     border-right: 1px solid #383838;
+    position: fixed;
+    height: 100vh;
 }
 
 .logo {
@@ -76,7 +78,7 @@ export default {
     color: #bbb;
     text-decoration: none;
     border-radius: 6px;
-    gap: 12px;
+    gap: 8px;
     transition: all 0.2s;
     font-size: 16px;
 }

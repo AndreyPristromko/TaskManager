@@ -3,6 +3,7 @@
         <div class="tasks-header">
             <h1>Задачи</h1>
         </div>
+        <CreateTask class="create-task-button" @task-created="onTaskCreated" />
 
         <div class="tasks-list">
             <div v-if="loading" class="loading">
@@ -20,53 +21,21 @@
                 </div>
 
                 <!-- Режим редактирования -->
-                <div v-else class="task-content">
-                    <div class="edit-form">
-                        <input 
-                            type="text" 
-                            v-model="task.editTitle" 
-                            class="edit-input"
-                            placeholder="Название задачи"
-                        >
-                        <textarea 
-                            v-model="task.editDescription" 
-                            class="edit-input"
-                            placeholder="Описание задачи"
-                        ></textarea>
-                        <input 
-                            type="date" 
-                            v-model="task.editDeadline"
-                            class="edit-input date-input"
-                        >
-                        <div class="edit-buttons">
-                            <button @click="saveEdit(task)" class="save-btn">Сохранить</button>
-                            <button @click="cancelEdit(task)" class="cancel-btn">Отмена</button>
-                        </div>
-                    </div>
-                </div>
+                <TaskEdit 
+                    v-else 
+                    :task="task"
+                    @task-updated="onTaskUpdated"
+                    @edit-cancelled="cancelEdit(task)"
+                />
 
                 <div class="task-footer">
-                    <div class="custom-select" v-click-outside="() => closeSelect(task)">
-                        <div 
-                            class="select-trigger" 
-                            @click.stop="toggleSelect(task)"
-                            :class="{ 'active': task.isSelectOpen }"
-                        >
-                            <span>{{ getStatusText(task.status) }}</span>
-                            <span class="select-arrow" :class="{ 'open': task.isSelectOpen }">▼</span>
-                        </div>
-                        <div class="select-options" v-if="task.isSelectOpen" @click.stop>
-                            <div 
-                                v-for="option in statusOptions" 
-                                :key="option.value"
-                                class="select-option"
-                                @click="selectOption(task, option.value)"
-                                :class="{ 'selected': task.status === option.value }"
-                            >
-                                {{ option.text }}
-                            </div>
-                        </div>
-                    </div>
+                    <StatusSelect 
+                        :task="task"
+                        @toggle-select="toggleSelect"
+                        @close-select="closeSelect"
+                        @status-updated="onStatusUpdated"
+                        @status-update-failed="onStatusUpdateFailed"
+                    />
                     <span class="task-date">{{ formatDate(task.deadline) }}</span>
                 </div>
             </div>
@@ -77,9 +46,17 @@
 <script>
 import axios from 'axios'
 import { clickOutside } from '../directives/clickOutside'
+import StatusSelect from './StatusSelect.vue'
+import CreateTask from './CreateTask.vue'
+import TaskEdit from './TaskEdit.vue'
 
 export default {
     name: 'TasksList',
+    components: {
+        StatusSelect,
+        CreateTask,
+        TaskEdit
+    },
     directives: {
         clickOutside
     },
@@ -148,45 +125,31 @@ export default {
             });
             task.isSelectOpen = !task.isSelectOpen;
         },
-        async selectOption(task, status) {
-            // Сохраняем старый статус на случай ошибки
-            const oldStatus = task.status;
-            
-            // Сразу обновляем UI
-            task.status = status;
-            task.isSelectOpen = false;
-            
-            try {
-                await axios.patch(`/tasks/${task.id}/status`, { 
-                    status: status 
-                });
-            } catch (error) {
-                // В случае ошибки возвращаем старый статус
-                console.error('Error updating task:', error);
-                task.status = oldStatus;
-            }
-        },
         closeSelect(task) {
             if (task) {
                 task.isSelectOpen = false;
             }
         },
-        getStatusText(status) {
-            switch (status) {
-                case 'todo':
-                    return 'К выполнению';
-                case 'in_progress':
-                    return 'В процессе';
-                case 'done':
-                    return 'Выполнено';
-                default:
-                    return 'Неизвестный статус';
-            }
+        onStatusUpdated({ task, status }) {
+            task.status = status;
+            task.isSelectOpen = false;
+        },
+        onStatusUpdateFailed({ task, oldStatus }) {
+            task.status = oldStatus;
         },
         formatDate(date) {
             if (!date) return '';
             const [year, month, day] = date.split('-');
             return `${day}.${month}.${year}`;
+        },
+        onTaskUpdated(updatedTask) {
+            const index = this.tasks.findIndex(t => t.id === updatedTask.id)
+            if (index !== -1) {
+                this.tasks[index] = { ...this.tasks[index], ...updatedTask, isEditing: false }
+            }
+        },
+        onTaskCreated(newTask) {
+            this.tasks.push(newTask)
         }
     },
     mounted() {
@@ -200,16 +163,24 @@ export default {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
+    margin-top: -24px;
 }
 
 .tasks-header {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
 }
 
 .tasks-header h1 {
     font-size: 24px;
-    font-weight: 600;
+    font-weight: 500;
     color: #fff;
+    margin: 0;
+    line-height: 1;
+}
+
+.create-task-button {
+    margin-top: 30px;
+    margin-bottom: 30px;
 }
 
 .tasks-list {
@@ -234,17 +205,25 @@ export default {
     margin-bottom: 12px;
 }
 
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
 .task-title {
     font-size: 16px;
     font-weight: 500;
     color: #fff;
-    margin-bottom: 6px;
+    margin: 0;
 }
 
 .task-description {
     font-size: 14px;
     color: #9898a3;
     line-height: 1.4;
+    margin: 0;
 }
 
 .task-footer {
@@ -253,84 +232,6 @@ export default {
     align-items: center;
     padding-top: 12px;
     border-top: 1px solid #383950;
-}
-
-.custom-select {
-    position: relative;
-    min-width: 140px;
-}
-
-.select-trigger {
-    background: #383950;
-    border: 1px solid #4a4b61;
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.2s ease;
-}
-
-.select-trigger:hover {
-    border-color: #9dff00;
-    background-color: #424360;
-}
-
-.select-arrow {
-    color: #9dff00;
-    font-size: 12px;
-    margin-left: 8px;
-    transition: transform 0.2s ease;
-}
-
-.select-arrow.open {
-    transform: rotate(180deg);
-}
-
-.select-options {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
-    background: #2f3042;
-    border: 1px solid #4a4b61;
-    border-radius: 4px;
-    overflow: hidden;
-    z-index: 100;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.select-option {
-    padding: 10px 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    color: #fff;
-    font-size: 14px;
-}
-
-.select-option:hover {
-    background: #424360;
-    color: #9dff00;
-}
-
-.select-option.selected {
-    background: #424360;
-    color: #9dff00;
-}
-
-/* Анимации для выпадающего списка */
-.dropdown-enter-active,
-.dropdown-leave-active {
-    transition: all 0.2s ease;
-}
-
-.dropdown-enter-from,
-.dropdown-leave-to {
-    opacity: 0;
-    transform: translateY(-4px);
 }
 
 .task-date {
@@ -343,13 +244,6 @@ export default {
     padding: 40px;
     color: #9898a3;
     font-size: 16px;
-}
-
-.task-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
 }
 
 .edit-btn {
